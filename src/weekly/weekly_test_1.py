@@ -7,10 +7,10 @@ def every_element_is_odd(input_list):
     for num in input_list:
         if num % 2 == 1:
             odd_count += 1
-        if odd_count == len(input_list):
-            return False
-        else:
-            return True
+    if odd_count == len(input_list):
+         return True
+    else:
+        return False
 
 
 
@@ -42,7 +42,10 @@ def merge_lists(*lists):
     return merged_list
 
 def squared_odds(input_list):
-    odd_numbers = [y for x,y in enumerate(input_list) if x%2 != 1]
+    odd_numbers = []
+    for i in input_list:
+        if i %2 ==1:
+            odd_numbers.append(i)
     squared_list = []
     for num in odd_numbers:
         squared_list.append(num*num)
