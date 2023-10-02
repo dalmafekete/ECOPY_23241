@@ -20,9 +20,14 @@ def kth_largest_in_list(input_list, kth_largest):
 
 
 def cumavg_list(input_list):
-    import numpy as np
-    z = np.cumsum(input_list) / range(1, len(input_list) + 1)
-    return z
+    rolling_averages = []
+    for i in range(len(input_list)):
+        window = input_list[0:i+1]
+        average = sum(window) / (i+1)
+        rolling_averages.append(average)
+
+    return rolling_averages
+
 
 
 def element_wise_multiplication(input_list1, input_list2):
@@ -64,15 +69,15 @@ def sort_list_by_divisibility(input_list):
     list_25 = []
     list_none = []
     for i in input_list:
-        if i % 2 == 0:
-            list_2.append(i)
-            if i % 5 == 0:
-                list_25.append(i)
+        if i % 5 == 0 and i % 2 == 0:
+            list_25.append(i)
         elif i % 5 == 0:
             list_5.append(i)
-        if i % 2 != 0:
-            if i % 5 != 0:
-                list_none.append(i)
+        elif i % 2 == 0:
+            list_2.append(i)
+    for i in input_list:
+        if i % 2 != 0 and i % 5 != 0:
+            list_none.append(i)
 
     div_dict = {'by_two': list_2, "by_five": list_5, "by_two_and_five": list_25, "by_none": list_none}
     return div_dict
