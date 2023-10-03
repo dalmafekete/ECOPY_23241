@@ -26,6 +26,15 @@ class LaplaceDistribution:
 
         return cdf
 
+    def ppf(self, p):
+        inv_num2 = self.loc - self.scale * math.copysign(1, (p - 0.5)) * math.log(1 - 2 * abs(p - 0.5))
+        return inv_num2
+
+    def gen_rand(self):
+        p_value = random.random()
+        random_gen = self.loc - self.scale * math.copysign(1, (p_value - 0.5)) * math.log(1 - 2 * abs(p_value - 0.5))
+        return random_gen
+
     def mean(self):
         mean_num2 = self.loc
         return mean_num2
@@ -58,11 +67,6 @@ class LaplaceDistribution:
 
         return moment_list
 
-    def gen_rand(self):
-        e1 = -self.scale * math.log(random.random())
-        e2 = -self.scale * math.log(random.random())
-        return e1 -e2
-
 
 class ParetoDistribution:
     def __init__(self, rand, scale, shape):
@@ -88,38 +92,44 @@ class ParetoDistribution:
         ppf2 = self.scale * (1 - p) ** ppf_one
         return ppf2
 
-    def gen_random(self):
-        u = random.random()
-        x = self.scale / (u ** (1/self.shape))
-        return x
+    def gen_rand(self):
+        p_value = random.random()
+        ppf_one = -1/self.shape
+        pareto_random = self.scale * (1 - p_value) ** ppf_one
+        return pareto_random
 
     def mean(self):
         if self.shape <= 1:
-            mean = float("infinite")
+            mean = math.inf
         else:
             mean = (self.shape * self.scale) / (self.shape - 1)
         return mean
 
-    def median(self):
-        median = x_min * (2 ** (1 / k) - 1)
-        return median
-
     def variance(self):
-        var1 = self.scale ** 2 * self.shape
-        var2 = (self.shape - 1) ** 2 * (self.shape - 2)
-        var = var1 / var2
+        if self.shape <= 2:
+            var = math.inf
+        else:
+            var1 = self.scale ** 2 * self.shape
+            var2 = (self.shape - 1) ** 2 * (self.shape - 2)
+            var = var1 / var2
         return var
 
     def skewness(self):
-        one = (self.shape - 2) / self.shape
-        two = (2 * (1 + self.shape)) / (self.shape - 3)
-        skew = two * math.sqrt(one)
+        if self.shape <= 3:
+            skew = math.inf
+        else:
+            one = (self.shape - 2) / self.shape
+            two = (2 * (1 + self.shape)) / (self.shape - 3)
+            skew = two * math.sqrt(one)
         return skew
 
     def ex_kurtosis(self):
-        kurt_one = (6 * (self.shape ** 3 + self.shape ** 2 - 6 * self.shape - 2))
-        kurt_two = self.shape * (self.shape - 3) * (self.shape - 4)
-        kurt = kurt_one / kurt_two
+        if self.shape <= 4:
+            kurt = math.inf
+        else:
+            kurt_one = (6 * (self.shape ** 3 + self.shape ** 2 - 6 * self.shape - 2))
+            kurt_two = self.shape * (self.shape - 3) * (self.shape - 4)
+            kurt = kurt_one / kurt_two
         return kurt
 
     def mvsk(self):
