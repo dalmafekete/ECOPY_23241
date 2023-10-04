@@ -1,6 +1,11 @@
 import random
 import math
 import pyerf
+import random
+import random
+import math
+import scipy
+from scipy.special import gamma, gammaincc
 
 
 class UniformDistribution:
@@ -28,8 +33,9 @@ class UniformDistribution:
         return inv_num
 
     def gen_random(self):
-        rand_num = random.uniform(self.a, self.b)
-        return rand_num
+        p = random.random()
+        inv_num = math.sqrt((1/12 * (self.b - self.a) ** 2)) * math.sqrt(3) * (2 * p - 1) + 1/2 * (self.a + self.b)
+        return inv_num
 
     def mean(self):
         mean_num = 1 / 2 * (self.a + self.b)
@@ -137,9 +143,103 @@ class CauchyDistribution:
         inv_num3 = self.loc + self.scale * math.tan(math.pi * (p - 1 / 2))
         return inv_num3
 
+    def gen_random(self):
+        p = random.random()
+        inv_num3 = self.loc + self.scale * math.tan(math.pi * (p - 1 / 2))
+        return inv_num3
+
     def pdf(self, x):
         pdf_num3 = 1/(math.pi * self.scale * (1 + ((x - self.loc)/ self.scale) ** 2))
         return pdf_num3
 
     def mvsk(self):
         raise Exception("Moments undefined")
+
+
+class LogisticDistribution:
+    def __init__(self, rand, location, scale):
+        self.rand = rand
+        self.location = location
+        self.scale = scale
+
+    def pdf(self, x):
+        pdf = (math.exp(-(x - self.location) / self.scale) /(self.scale * (1 + math.exp(-(x - self.location) / self.scale)) ** 2))
+        return pdf
+
+    def cdf(self, x):
+        cdf = 1 / (1 + math.exp(-(x - self.location) / self.scale))
+        return cdf
+
+    def ppf(self, p):
+        ppf_one = p / (1 - p)
+        ppf = self.location + self.scale * math.log(ppf_one)
+        return ppf
+
+    def gen_rand(self):
+        p_value = random.random()
+        ppf_one = p_value / (1 - p_value)
+        logistic_random = self.location + self.scale * math.log(ppf_one)
+        return logistic_random
+
+    def mean(self):
+        mean = self.location
+        return mean
+
+    def variance(self):
+        var = ((self.scale ** 2) * math.pi ** 2) / 3
+        return var
+
+    def skewness(self):
+        skew = 0
+        return skew
+
+    def ex_kurtosis(self):
+        kurt = 6 / 5
+        return kurt
+
+    def mvsk(self):
+        return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
+
+
+class ChiSquaredDistribution:
+    def __init__(self, rand, dof):
+        self.rand = rand
+        self.dof = dof
+
+    def pdf(self, x):
+        pdf = (1 / (2 ** (self.dof / 2) * gamma(self.doc / 2))) * x ** ((self.doc / 2) - 1) * math.exp(-x / 2)
+        return pdf
+
+    def cdf(self, x):
+        cdf = gammaincc(self.dof / 2, x / 2)
+        return cdf
+
+    def ppf(self, p):
+        ppf_one = -1 / self.shape
+        ppf2 = self.scale * (1 - p) ** ppf_one
+        return ppf2
+
+    def gen_random(self):
+        p = random.uniform(0, 1)
+        ppf_one = -1 / self.shape
+        pareto_random = self.scale * (1 - p) ** ppf_one
+        return pareto_random
+
+    def mean(self):
+        mean = self.dof
+        return mean
+
+    def variance(self):
+        var = self.dof * 2
+        return var
+
+    def skewness(self):
+        skew = math.sqrt((8 / self.dof))
+        return skew
+
+    def ex_kurtosis(self):
+        kurt = 12 / self.dof
+        return kurt
+
+    def mvsk(self):
+        return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
