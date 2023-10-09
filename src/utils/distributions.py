@@ -1,11 +1,8 @@
-import random
 import math
+import random
+
 import pyerf
-import random
-import random
-import math
-import scipy
-from scipy.special import gamma, gammaincc
+from scipy.special import gamma, gammainc, gammaincinv
 
 
 class UniformDistribution:
@@ -32,7 +29,7 @@ class UniformDistribution:
         inv_num = math.sqrt((1/12 * (self.b - self.a) ** 2)) * math.sqrt(3) * (2 * p - 1) + 1/2 * (self.a + self.b)
         return inv_num
 
-    def gen_random(self):
+    def gen_rand(self):
         p = random.random()
         inv_num = math.sqrt((1/12 * (self.b - self.a) ** 2)) * math.sqrt(3) * (2 * p - 1) + 1/2 * (self.a + self.b)
         return inv_num
@@ -90,7 +87,7 @@ class NormalDistribution:
         inv_num2 = self.loc + math.sqrt(self.scale) * math.sqrt(2) * (1/pyerf.erf(2 * p -1))
         return inv_num2
 
-    def gen_random(self):
+    def gen_rand(self):
         u1 = random.uniform(0, 1)
         u2 = random.uniform(0, 1)
         z0 = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
@@ -143,7 +140,7 @@ class CauchyDistribution:
         inv_num3 = self.loc + self.scale * math.tan(math.pi * (p - 1 / 2))
         return inv_num3
 
-    def gen_random(self):
+    def gen_rand(self):
         p = random.random()
         inv_num3 = self.loc + self.scale * math.tan(math.pi * (p - 1 / 2))
         return inv_num3
@@ -207,23 +204,21 @@ class ChiSquaredDistribution:
         self.dof = dof
 
     def pdf(self, x):
-        pdf = (1 / (2 ** (self.dof / 2) * gamma(self.doc / 2))) * x ** ((self.doc / 2) - 1) * math.exp(-x / 2)
+        pdf = (1 / (2 ** (self.dof / 2) * gamma(self.dof / 2))) * x ** ((self.dof / 2) - 1) * math.exp(-x / 2)
         return pdf
 
     def cdf(self, x):
-        cdf = gammaincc(self.dof / 2, x / 2)
+        cdf = gammainc((self.dof / 2), (x / 2))
         return cdf
 
     def ppf(self, p):
-        ppf_one = -1 / self.shape
-        ppf2 = self.scale * (1 - p) ** ppf_one
-        return ppf2
+        ppf = gammaincinv(self.dof / 2, p) * 2
+        return ppf
 
-    def gen_random(self):
-        p = random.uniform(0, 1)
-        ppf_one = -1 / self.shape
-        pareto_random = self.scale * (1 - p) ** ppf_one
-        return pareto_random
+    def gen_rand(self):
+        p = random.random()
+        chi_random = gammaincinv(self.dof / 2, p) * 2
+        return chi_random
 
     def mean(self):
         mean = self.dof
