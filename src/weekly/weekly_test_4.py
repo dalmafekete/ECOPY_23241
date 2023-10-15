@@ -43,15 +43,17 @@ avg_goal(csv_file)
 
 def countries_over_five(input_df):
     euro12 = input_df.copy()
-    filtered_df = euro12[euro12['Goals'] >= 6]
-    return filtered_df
+    cv = euro12[["Team", "Goals"]]
+    filtered_df = cv[cv['Goals'] >= 6]
+    new_cv = pd.DataFrame(filtered_df['Team'])
+    return new_cv
 
 countries_over_five(csv_file)
 
 def countries_starting_with_g(input_df):
     euro12 = input_df.copy()
     filtered_df = euro12[euro12['Team'].str.startswith('G')]
-    return filtered_df
+    return filtered_df['Team']
 
 countries_starting_with_g(csv_file)
 
@@ -73,9 +75,25 @@ def every_column_except_last_three(input_df):
 
 every_column_except_last_three(csv_file)
 
+def sliced_view(input_df, columns_to_keep, column_to_filter, rows_to_keep):
+    euro12 = input_df.copy()
+    szurt_adatok = euro12[euro12[column_to_filter].isin(rows_to_keep)]
+    kivalasztott_oszlopok = szurt_adatok[columns_to_keep]
+
+    return kivalasztott_oszlopok
 
 def generate_quartile(input_df):
-    input_df['Quartile'] = pd.cut(input_df['Goals'], bins = [0,2, 4, 5, 12], labels = [4,3,2,1])
+    quartile_list = []
+    for i in input_df['Goals']:
+        if i < 3:
+            quartile_list.append(4)
+        elif 2 < i < 5:
+            quartile_list.append(3)
+        elif i == 5:
+            quartile_list.append(2)
+        elif 5 < i < 13:
+            quartile_list.append(1)
+    input_df['Quartile'] = quartile_list
     return input_df
 
 generate_quartile(csv_file)
@@ -89,8 +107,7 @@ average_yellow_in_quartiles(csv_file)
 
 def minmax_block_in_quartile(input_df):
     euro12 = input_df.copy()
-    blocks = euro12.groupby("Quartile")["Blocks"].min()
-    blocks['Blocks max'] = euro12.groupby("Quartile")["Blocks"].max()
+    blocks = euro12.groupby("Quartile")["Blocks"].agg(['min', 'max'])
     return blocks
 
 minmax_block_in_quartile(csv_file)
@@ -114,18 +131,6 @@ class ParetoDistribution:
         self.shape = shape
         self.scale = scale
 
-    def pdf(self, x):
-        pdf_num_one = self.shape * self.scale ** self.shape
-        pdf_num_two = x ** (self.shape + 1)
-        pdf2 = pdf_num_one / pdf_num_two
-
-        return pdf2
-
-    def cdf(self, x):
-        cdf_one = (self.scale / x) ** self.shape
-        cdf2 = 1 - cdf_one
-
-        return cdf2
 
     def ppf(self, p):
         ppf_one = -1 / self.shape
@@ -133,24 +138,27 @@ class ParetoDistribution:
         return ppf2
 
     def gen_rand(self):
-        p = random.random()
-        ppf_one = -1 / self.shape
-        ppf2 = self.scale * (1 - p) ** ppf_one
-        return ppf2
+        p_value = random.random()
+        ppf_one = -1/self.shape
+        pareto_random = self.scale * (1 - p_value) ** ppf_one
+        return pareto_random
+
 def gen_pareto_mean_trajectories(pareto_distribution, number_of_trajectories, length_of_trajectory):
     random.seed(42)
-    inner_list = []
     main_list = []
-    cum_list = []
     for x in range(number_of_trajectories):
+        inner_list = []
         for n in range(length_of_trajectory):
             rand = pareto_distribution.gen_rand()
             inner_list.append(rand)
 
-        for i in range(len(inner_list)):
+        cum_list = []
+        for i in range(number_of_trajectories):
             window = inner_list[0:i + 1]
             average = sum(window) / (i + 1)
             cum_list.append(average)
         main_list.append(cum_list)
 
     return main_list
+
+gen_pareto_mean_trajectories(ParetoDistribution(random,1,1), 2, 20)
