@@ -7,38 +7,41 @@ import matplotlib
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-file_to_load = Path.cwd().parent.joinpath('data').joinpath('chipotle.tsv')
-
 def csv_to_df(input_csv):
     food = pd.read_csv(input_csv, sep='\t')
-    return  food
+    return food
 
 def change_price_to_float(input_df):
     input_df['item_price'] = input_df['item_price'].str.replace('$', '').astype(float)
     return input_df
 
 def number_of_observations(input_df):
-    szam = input_df.shape[0]
+    food = input_df.copy()
+    szam = food.shape[0]
     return szam
 
 def items_and_prices(input_df):
-    price_items = input_df[["item_name", "item_price"]]
+    food = input_df.copy()
+    price_items = food[["item_name", "item_price"]]
     return price_items
 
 def sorted_by_price(input_df):
-    sorted_df = input_df.sort_values(by="item_price", ascending=False)
+    food = input_df.copy()
+    sorted_df = food.sort_values(by="item_price", ascending=False)
     return sorted_df
 
 def avg_price(input_df):
-    average = input_df["item_price"].mean()
+    food = input_df.copy()
+    average = food["item_price"].mean()
     return average
 
 
 def unique_items_over_ten_dollars(input_df):
-    draga_termekek = input_df[input_df["item_price"] > 10]
+    food = input_df.copy()
+    draga_termekek = food[food["item_price"] > 10]
     egyedi_draga_termekek = draga_termekek.drop_duplicates(subset=["item_name", "item_price", "choice_description"])
 
-    return egyedi_draga_termekek[["item_name", "choice_description" ,"item_price"]]
+    return egyedi_draga_termekek[["item_name", "choice_description","item_price"]]
 
 def items_starting_with_s(input_df):
     food= input_df.copy()
@@ -52,7 +55,7 @@ def first_three_columns(input_df):
 
 def every_column_except_last_two(input_df):
     food2 = input_df.copy()
-    return food2.iloc[:, :-3]
+    return food2.iloc[:, :-2]
 
 
 def sliced_view(input_df,columns_to_keep, column_to_filter, rows_to_keep):
@@ -63,8 +66,9 @@ def sliced_view(input_df,columns_to_keep, column_to_filter, rows_to_keep):
     return kivalasztott_oszlopok
 
 def generate_quartile(input_df):
+    food = input_df.copy()
     quartile_list = []
-    for i in input_df['item_price']:
+    for i in food['item_price']:
         if i < 9.99:
             quartile_list.append('low-cost')
         elif 10 < i < 19.99:
@@ -73,8 +77,8 @@ def generate_quartile(input_df):
             quartile_list.append('high-cost')
         elif 30 <= i:
             quartile_list.append('premium')
-    input_df['Quartile'] = quartile_list
-    return input_df
+    food['Quartile'] = quartile_list
+    return food
 
 def average_price_in_quartiles(input_df):
     food = input_df.copy()
@@ -83,7 +87,7 @@ def average_price_in_quartiles(input_df):
 
 def minmaxmean_price_in_quartile(input_df):
     food = input_df.copy()
-    blocks = food.groupby("Quartile")["item_price"].agg(['min', 'max'])
+    blocks = food.groupby("Quartile")["item_price"].agg(['min', 'max', 'mean'])
     return blocks
 
 
