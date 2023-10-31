@@ -26,14 +26,14 @@ class LinearRegressionSM:
         return p_values
 
     def get_wald_test_result(self, restriction_matrix):
-        wald_result = self.model.wald_test(self.restriction_matrix)
-        fvalue = wald_result.statistic
-        pvalue = wald_result.pvalue
-        return f"F-value: {fvalue:.3f}, p-value: {pvalue:.3f}"
+        wald_test = self.model.wald_test(restriction_matrix, scalar = True)
+        fvalue = wald_test.statistic
+        pvalue = wald_test.pvalue
+        return f"F-value: {fvalue:.2f}, p-value: {pvalue:.3f}"
 
     def get_model_goodness_values(self):
         ars = self.model.rsquared_adj
         ak = self.model.aic
         by = self.model.bic
-        return f"Adjusted R-squared: {ars:.3f}, Akaike IC: {ak:.3f}, Bayes IC: {by:.3f}"
+        return f"Adjusted R-squared: {ars:.3f}, Akaike IC: {ak:.2e}, Bayes IC: {by:.2e}"
 
