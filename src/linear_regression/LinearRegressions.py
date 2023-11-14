@@ -124,23 +124,23 @@ class LinearRegressionNP:
     def get_wald_test_result(self, restriction_matrix):
         X = self.right_hand_side
         y = self.left_hand_side
-        X = np.column_stack((np.ones(X.shape[0]), X))
+        X = np.concatenate((np.ones((X.shape[0], 1)), self.right_hand_side), axis=1)
+        R = np.asmatrix(restriction_matrix)
 
         XTX = np.dot(X.T, X)
         XTy = np.dot(X.T, y)
         beta_hat = np.linalg.solve(XTX, XTy)
 
         n = X.shape[0]
-        residuals = y - np.dot(X, beta_hat)
-        sse = np.sum(residuals ** 2)
-
-        wald_value = np.dot(np.dot(np.array(restriction_matrix), beta_hat), np.transpose(np.array(restriction_matrix))) / sse
-
-        df1 = np.array(restriction_matrix).shape[0]
         df2 = n - X.shape[1]
+        residuals = y - np.dot(X, beta_hat)
+        sse = np.dot(residuals.T, residuals)/df2
 
-        p_value = 1 - f.cdf(wald_value, df1, df2)
+        RBr = R @ beta_hat
+        df1 = R.shape[0]
+        wald_one = R @ np.linalg.inv(X.T @ X) @ R.T
+        wald_test = RBr @ np.linalg.inv(wald_one) @ RBr.T/ df1/ sse
 
-        result_string = f"Wald: {wald_value:.3f}, p-value: {p_value:.3f}"
-
+        p_value = 1 - f.cdf(wald_test.item(), df1, df2)
+        result_string = f"Wald: {wald_test.item():.3f}, p-value: {p_value:.3f}"
         return result_string
