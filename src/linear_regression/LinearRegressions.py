@@ -3,6 +3,7 @@ import statsmodels.api as sm
 import numpy as np
 from scipy.stats import t
 from scipy.stats import f
+import math
 
 class LinearRegressionSM:
     def __init__(self, left_hand_side, right_hand_side):
@@ -144,3 +145,89 @@ class LinearRegressionNP:
         p_value = 1 - f.cdf(wald_test.item(), df1, df2)
         result_string = f"Wald: {wald_test.item():.3f}, p-value: {p_value:.3f}"
         return result_string
+
+
+class LinearRegressionGLS:
+    def __init__(self, left_hand_side, right_hand_side):
+        self.left_hand_side = left_hand_side
+        self.right_hand_side = right_hand_side
+        self.model = None
+        self.beta_gls = None
+
+    def fit(self):
+        X = self.right_hand_side
+        y = self.left_hand_side
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        # OLS becslés
+        XTX_inv = np.linalg.inv(X.T @ X)
+        beta_ols = XTX_inv @ X.T @ y
+
+        # Hibatagok kiszámítása
+        residuals = y - X @ beta_ols
+
+        # Hibatagok négyzetének kiszámítása
+        squared_residuals = residuals ** 2
+
+        # Új modell becslése
+
+        new_beta_ols = XTX_inv @ X.T @ np.log(squared_residuals)
+
+        # Becsült értékek kiszámítása
+        y_hat = X @ new_beta_ols
+
+        y_hat_exp = np.exp(y_hat)
+
+        # V inverz mátrix készítése
+        V_inv = np.diag(1 / np.sqrt(y_hat_exp))
+
+        # GLS regresszió becslése
+        self.beta_gls = np.linalg.inv(X.T @ V_inv @ X) @ X.T @ V_inv @ y
+
+        return self.beta_gls
+
+    def get_params(self):
+        X = self.right_hand_side
+        y = self.left_hand_side
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        # OLS becslés
+        XTX_inv = np.linalg.inv(X.T @ X)
+        beta_ols = XTX_inv @ X.T @ y
+
+        # Hibatagok kiszámítása
+        residuals = y - X @ beta_ols
+
+        # Hibatagok négyzetének kiszámítása
+        squared_residuals = residuals ** 2
+
+        # Új modell becslése
+
+        new_beta_ols = XTX_inv @ X.T @ np.log(squared_residuals)
+
+        # Becsült értékek kiszámítása
+        y_hat = X @ new_beta_ols
+
+        y_hat_exp = np.exp(y_hat)
+
+        # V inverz mátrix készítése
+        self.V_inv = np.diag(1 / np.sqrt(y_hat_exp))
+
+        # GLS regresszió becslése
+        beta_gls = np.linalg.inv(X.T @ self.V_inv @ X) @ X.T @ self.V_inv @ y
+
+        beta_series = pd.Series(beta_gls[0:4], name="Beta coefficients")
+        return beta_series
+
+    def get_pvalues(self):
+        X = self.right_hand_side
+        y = self.left_hand_side
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        XTX = np.dot(X.T, X)
+        y_pred = X @ self.beta_gls
+        residuals = y - y_pred
+        se = np.sqrt(residuals ** 2 / self.V_inv)
+        t_stats = self.beta_gls / se
+        p_values = 2 * (1 - t.cdf(np.abs(t_stats)))
+
+        p_values_series = pd.Series(p_values[0:], name="P-values for the corresponding coefficients")
+
+        return p_values_series
