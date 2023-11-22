@@ -3,6 +3,7 @@ import statsmodels.api as sm
 import numpy as np
 from scipy.stats import t
 from scipy.stats import f
+from scipy.optimize import minimize
 import math
 
 class LinearRegressionSM:
@@ -269,3 +270,37 @@ class LinearRegressionGLS:
 
         result_string = f"Centered R-squared: {crs:.3f}, Adjusted R-squared: {ars:.3f}"
         return result_string
+
+
+class LinearRegressionML:
+    def __init__(self, left_hand_side, right_hand_side):
+        self.left_hand_side = left_hand_side
+        self.right_hand_side = right_hand_side
+        self.model = None
+        self.beta_gls = None
+
+    def _log_likelihood(self, params):
+        X = self.right_hand_side
+        y = self.left_hand_side.to_numpy()
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        n = X.shape[0]
+        variance = params[0]
+        beta = params[1:]
+        number = ((y-X @ beta).T @ (y -X @ beta))/2*variance
+        self.log_likelihood = -n/2*math.log(2*math.pi)-n/2*math.log(variance)- number
+        return self.log_likelihood
+
+    def fit(self):
+        X = self.right_hand_side
+        y = self.left_hand_side.to_numpy()
+        initial_params = np.ones(X.shape[1] + 1) * 0.1
+        result = minimize(self._log_likelihood(), initial_params, args=(X, y), method='L-BFGS-B')
+        mle_params = result.X
+        self.mle_beta = mle_params[1:]
+        covariance_matrix = np.linalg.inv(result.hess_inv)
+        mle_std_errors = np.sqrt(np.diagonal(covariance_matrix))
+
+    def get_params(self):
+        beta_series = pd.Series(self.mle_beta[0:4], name="Beta coefficients")
+        return beta_series
+
