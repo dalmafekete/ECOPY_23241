@@ -3,6 +3,7 @@ import statsmodels.api as sm
 import numpy as np
 from scipy.stats import t
 from scipy.stats import f
+import scipy.stats as stats
 from scipy.optimize import minimize
 import math
 
@@ -277,30 +278,61 @@ class LinearRegressionML:
         self.left_hand_side = left_hand_side
         self.right_hand_side = right_hand_side
         self.model = None
-        self.beta_gls = None
-
-    def _log_likelihood(self, params):
-        X = self.right_hand_side
-        y = self.left_hand_side.to_numpy()
-        X = np.column_stack((np.ones(X.shape[0]), X))
-        n = X.shape[0]
-        variance = params[0]
-        beta = params[1:]
-        number = ((y-X @ beta).T @ (y -X @ beta))/2*variance
-        self.log_likelihood = -n/2*math.log(2*math.pi)-n/2*math.log(variance)- number
-        return self.log_likelihood
+        self.mle_beta= None
+        self.n = self.right_hand_side.shape[0]
+        self.X = np.concatenate((np.ones((self.n,1)), self.right_hand_side), axis = 1)
+        self.y = self.left_hand_side
 
     def fit(self):
-        X = self.right_hand_side
-        y = self.left_hand_side.to_numpy()
-        initial_params = np.ones(X.shape[1] + 1) * 0.1
-        result = minimize(self._log_likelihood(), initial_params, args=(X, y), method='L-BFGS-B')
-        mle_params = result.X
-        self.mle_beta = mle_params[1:]
-        covariance_matrix = np.linalg.inv(result.hess_inv)
-        mle_std_errors = np.sqrt(np.diagonal(covariance_matrix))
+        def _log_likelihood(params, X, y):
+            intercept, beta1, beta2, beta3, variance = params
+            beta = [intercept, beta1, beta2, beta3]
+            y_pred = X @ beta
+            log_likelihood = -1 * np.sum(stats.norm.logpdf(y, y_pred, variance))
+            return log_likelihood
+
+        n = self.right_hand_side.shape[0]
+        k = self.X.shape[1]
+        df2 = n - k
+        initial_params = [0.1, 0.1, 0.1, 0.1, 0.1]
+        result = minimize(_log_likelihood, initial_params, args=(self.X, self.y), method='L-BFGS-B')
+        mle_params = result.x
+        self.mle_beta = mle_params[:4]
+        self.mle_variance = mle_params[-1] ** 2 * n/(df2)
 
     def get_params(self):
-        beta_series = pd.Series(self.mle_beta[0:4], name="Beta coefficients")
+        beta_series = pd.Series(self.mle_beta, name="Beta coefficients")
         return beta_series
 
+    def get_pvalues(self):
+        X = self.right_hand_side
+        y = self.left_hand_side
+        X = np.column_stack((np.ones(X.shape[0]), X))
+
+        XTX = X.T @ X
+
+        y_pred = X @ self.mle_beta
+        residuals = y - y_pred
+        mse = residuals.T @ residuals/ (X.shape[0] - X.shape[1])
+
+        t_stats = self.mle_beta / np.sqrt(np.diag(mse * np.linalg.inv(XTX)))
+        p_values = 2 * (1 - t.cdf(np.abs(t_stats), (X.shape[0] - X.shape[1])))
+
+        p_values_series = pd.Series(p_values[0:], name="P-values for the corresponding coefficients")
+
+        return p_values_series
+
+    def get_model_goodness_values(self):
+        X = self.right_hand_side
+        y = self.left_hand_side
+        n = X.shape[0]
+        X = np.column_stack((np.ones(n), X))
+
+        sse = (y - X @ self.mle_beta).T @ (y- X @ self.mle_beta)
+        sst = (y - y.mean()).T @ (y - y.mean())
+
+        crs = 1 - sse / sst
+        ars = 1 - (1 - crs) * (n - 1) / (n - X.shape[1])
+
+        result_string = f"Centered R-squared: {crs:.3f}, Adjusted R-squared: {ars:.3f}"
+        return result_string
